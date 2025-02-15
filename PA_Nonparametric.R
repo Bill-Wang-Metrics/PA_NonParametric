@@ -1,12 +1,16 @@
 library(Rlab)
 library(gplm)
 library(stats4)
+library(plotrix)
 set.seed(42)
 
 logit <- function(x) exp(2*x)/(1+exp(2*x))
 Pa <- function(x) (0.5*(sin(pi*(2*x-1)))+.5)^2*logit((2*x-1))-0.1*(2*x-2)
-x <- seq(0,1,0.01)
-plot(x,Pa(x),type = "l",lwd = 3, ylab = "Attention Probability",xlab = "X")
+plotTRUE <- function(){
+  x <- seq(0,1,0.01)
+  plot(x,Pa(x),type = "l",lwd = 3, ylab = "Attention Probability",xlab = "X",
+  xlim = c(0,1), ylim = c(0,1))
+}
 
 
 P10 <- function(x) Pa(x)*logit(x)
@@ -66,17 +70,18 @@ colnames(FA) <- c("Participation", "x")
 
 logit_FA <- glm(Participation ~ x, family = binomial(link = "logit"), data = as.data.frame(FA))
 
+x = seq(0.05,0.95,0.1)
 SIEVE_SA <- lm(Participation ~ poly(x,floor(log(nrow(SA)))), data = as.data.frame(SA))
+newdata <- as.data.frame(cbind(rep(1,length(x)),x))
+SIEVE_SA <- predict(SIEVE_SA,newdata = newdata)
+logit_SA <- predict(logit_FA,newdata = newdata,type = "response")
 
-
-logit_SA <- predict(logit_FA,newdata = as.data.frame(SA),type = "response")
-
-plot(SA[,2],SIEVE_SA$fitted.values/logit_SA,
-     xlim = c(0,1), ylim = c(0,1),ylab = "",xlab = "",col = "red")
+plotTRUE()
 par(new = TRUE)
-x <- seq(0,1,0.01)
-plot(x,Pa(x),type = "l",lwd = 3, ylab = "Attention Probability",xlab = "X",
-     xlim = c(0,1), ylim = c(0,1))
+plot(x,SIEVE_SA/logit_SA,ylab = "",xlab = "",
+     xlim = c(0,1), ylim = c(0,1),col = "red",pch=19)
+
+
 
 # nll <- function(theta0,theta1) {
 #   x <- Y$age[-idx]
@@ -93,9 +98,31 @@ nll <- function(a,b,c,d){
 }
 
 est <- stats4::mle(minuslog=nll, start=list(a=2,b=0,c=2,d=0))
-
+x = seq(0.05,0.95,0.1)
 u <- coef(est)[1]*x + coef(est)[2]
 PA <- exp(u)/(1+exp(u))
+
+plotTRUE()
 par(new = TRUE)
-plot(x,PA, ylab = "Attention Probability",xlab = "X",
-     xlim = c(0,1), ylim = c(0,1),col = "blue")
+first <- cbind(x*PA^2*exp(-u),exp(-u)*PA^2)
+second <- vcov(est)[1:2,1:2]
+interval <- 1.96 * sqrt(rowSums(first %*% second * first))
+plotCI(x,PA,li = PA - interval,ui = PA + interval, ylab = "Attention Probability",xlab = "X",
+       xlim = c(0,1), ylim = c(0,1),col = "blue",pch=19)
+
+
+nll <- function(a,c,d){
+  PA <- a
+  PDSA <- exp(c*SA[,2]+d)/(1+exp(c*SA[,2]+d))
+  PDFA <- exp(c*FA[,2]+d)/(1+exp(c*FA[,2]+d))
+  -sum(SA[,1]*log(PA*PDSA) - PA*PDSA) - sum(FA[,1]*log(PDFA) - PDFA)
+}
+
+est <- stats4::mle(minuslog=nll, start=list(a=2,c=2,d=0))
+plotTRUE()
+x = seq(0.05,0.95,0.1)
+PA <- rep(coef(est)[1],length(x))
+interval <- rep(1.96 * sqrt(vcov(est)[1,1]),length(x))
+par(new = TRUE)
+plotCI(x,PA,li = PA - interval,ui = PA + interval, ylab = "Attention Probability",xlab = "X",
+     xlim = c(0,1), ylim = c(0,1),col = "green",pch=19)
