@@ -7,10 +7,10 @@ library(grf)
 set.seed(42)
 
 logit <- function(x) exp(2*x)/(1+exp(2*x))
-#Pa <- function(x) (0.5*(sin(pi*(2*x-1)))+.5)^2*logit((2*x-1))-0.1*(2*x-2)
+Pa <- function(x) (0.5*(sin(pi*(2*x-1)))+.5)^2*logit((2*x-1))-0.1*(2*x-2)
 #Pa <- function(x) logit(x)
 #Pa <- function(x) rep(0.3,length(x))
-Pa <- function(x) (0.5*(cos(pi*(2*x-1)))+.5)^2*logit((2*x-1))-0.1*(2*x-3)
+#Pa <- function(x) (0.5*(cos(pi*(2*x-1)))+.5)^2*logit((2*x-1))-0.1*(2*x-3)
 plotTRUE <- function(){
   x <- seq(0,1,0.01)
   par(mar=c(5,5,2,1)+.1)
@@ -19,7 +19,7 @@ plotTRUE <- function(){
   axis(1,cex.axis=2)
   axis(2,cex.axis=2)
 }
-plotTRUE()
+#plotTRUE()
 
 
 P10 <- function(x) Pa(x)*logit(x)
