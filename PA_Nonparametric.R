@@ -76,7 +76,7 @@ for (t in 2:(T + 1)) {  # Start from t = 2 because t = 1 is the initial period
 # Add column names for clarity
 colnames(SA) <- c("Participation", "x")
 colnames(FA) <- c("Participation", "x")
-x = seq(0,1,0.2)
+x = seq(0,1,0.05)
 
 par(mfrow = c(2,2))
 #par(mfrow = c(1,1))
@@ -143,7 +143,15 @@ u_hat <- SIEVE_SA$residuals
 Zu <- sweep(t(Z),2,u_hat,"*")
 Vn = Zx %*% ZZinv %*% Zu %*% t(Zu) %*% ZZinv %*% t(Zx)
 An <- 1/sqrt(diag(Vn))
-interval <- 1.96 * sqrt((1/logit_SA/An)^2) 
+
+onex <- cbind(1,x)
+C1 <- sweep(onex,1,logit_SA*(1-logit_SA),"*")
+onex <- cbind(1,FA[,2])
+predict_FA <- predict(logit_FA,type = "response")
+E1 <- t(sweep(onex,1,predict_FA*(1-predict_FA),"*"))%*%onex
+Em <- 1/(sqrt(diag(C1 %*% solve(E1) %*% t(C1))))
+
+interval <- 1.96 * sqrt((1/logit_SA/An)^2 + (SIEVE_SAx/logit_SA^2/Em)^2) 
 plotCI(x,SIEVE_SAx/logit_SA,
      li = ifelse(SIEVE_SAx/logit_SA - interval>0,SIEVE_SAx/logit_SA - interval,0),
      ui = ifelse(SIEVE_SAx/logit_SA + interval<1,SIEVE_SAx/logit_SA + interval,1), 
@@ -156,7 +164,17 @@ RF_SA <- regression_forest(matrix(SA[,2]),matrix(SA[,1]),min.node.size = min(dim
 RF_SAx <- predict(RF_SA, matrix(x),estimate.variance = TRUE)
 plotTRUE()
 par(new = TRUE)
-interval = 1.96 * sqrt(RF_SAx$variance.estimates)/logit_SA
+
+onex <- cbind(1,x)
+C1 <- sweep(onex,1,logit_SA*(1-logit_SA),"*")
+onex <- cbind(1,FA[,2])
+predict_FA <- predict(logit_FA,type = "response")
+E1 <- t(sweep(onex,1,predict_FA*(1-predict_FA),"*"))%*%onex
+Em <- 1/(sqrt(diag(C1 %*% solve(E1) %*% t(C1))))
+
+interval <- 1.96 * sqrt((1/logit_SA/An)^2 + (SIEVE_SAx/logit_SA^2/Em)^2)
+interval = 1.96 * sqrt(RF_SAx$variance.estimates/logit_SA + (SIEVE_SAx/logit_SA^2/Em)^2)
+
 plotCI(x,RF_SAx$predictions/logit_SA,
        li = ifelse(RF_SAx$predictions/logit_SA - interval>0,RF_SAx$predictions/logit_SA - interval,0),
        ui = ifelse(RF_SAx$predictions/logit_SA + interval<1,RF_SAx$predictions/logit_SA + interval,1), 
