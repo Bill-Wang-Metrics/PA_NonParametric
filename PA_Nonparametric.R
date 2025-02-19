@@ -76,7 +76,7 @@ for (t in 2:(T + 1)) {  # Start from t = 2 because t = 1 is the initial period
 # Add column names for clarity
 colnames(SA) <- c("Participation", "x")
 colnames(FA) <- c("Participation", "x")
-x = seq(0,1,0.05)
+x = seq(0,1,0.2)
 
 par(mfrow = c(2,2))
 #par(mfrow = c(1,1))
