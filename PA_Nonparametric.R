@@ -98,8 +98,8 @@ par(new = TRUE)
 plotCI(x,PA,
        li = ifelse(PA - interval>0,PA - interval,0),
        ui = ifelse(PA + interval<1,PA + interval,1),  
-       ylab = "",xlab = "",yaxt="n",xaxt="n",
-       xlim = c(0,1), ylim = c(0,1),col = "darkgreen", pch=19)
+       ylab = "",xlab = "",yaxt="n",xaxt="n", main ="Constant",cex.main = 2,
+       xlim = c(0,1), ylim = c(0,1),col = "darkgreen", pch=19) 
 
 ######## logit PA
 nll <- function(a,b,c,d){
@@ -122,7 +122,7 @@ interval <- 1.96 * sqrt(rowSums(first %*% second * first))
 plotCI(x,PA,
        li = ifelse(PA - interval>0,PA - interval,0),
        ui = ifelse(PA + interval<1,PA + interval,1), 
-       ylab = "",xlab = "",yaxt="n",xaxt="n",
+       ylab = "",xlab = "",yaxt="n",xaxt="n", main ="Logit",cex.main = 2,
        xlim = c(0,1), ylim = c(0,1),col = "blue", pch=19)
 
 
@@ -147,7 +147,7 @@ interval <- 1.96 * sqrt((1/logit_SA/An)^2)
 plotCI(x,SIEVE_SAx/logit_SA,
      li = ifelse(SIEVE_SAx/logit_SA - interval>0,SIEVE_SAx/logit_SA - interval,0),
      ui = ifelse(SIEVE_SAx/logit_SA + interval<1,SIEVE_SAx/logit_SA + interval,1), 
-     ylab = "",xlab = "",yaxt="n",xaxt="n",
+     ylab = "",xlab = "",yaxt="n",xaxt="n", main ="SIEVE LS",cex.main = 2,
      xlim = c(0,1), ylim = c(0,1),col = "red", pch=19)
 
 
@@ -160,7 +160,7 @@ interval = 1.96 * sqrt(RF_SAx$variance.estimates)/logit_SA
 plotCI(x,RF_SAx$predictions/logit_SA,
        li = ifelse(RF_SAx$predictions/logit_SA - interval>0,RF_SAx$predictions/logit_SA - interval,0),
        ui = ifelse(RF_SAx$predictions/logit_SA + interval<1,RF_SAx$predictions/logit_SA + interval,1), 
-       ylab = "",xlab = "",yaxt="n",xaxt="n",
+       ylab = "",xlab = "",yaxt="n",xaxt="n", main ="Random Forest",cex.main = 2,
        xlim = c(0,1), ylim = c(0,1),col = "darkorange", pch=19)
 
 # Boost_SA <- boosted_regression_forest(matrix(SA[,2]),matrix(SA[,1]))
