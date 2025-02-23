@@ -102,16 +102,16 @@ plotCI(x,PA,
        xlim = c(0,1), ylim = c(0,1),col = "darkgreen", pch=19) 
 
 ######## logit PA
-nll <- function(a,b,c,d){
-  PA <- exp(a*SA[,2]+b)/(1+exp(a*SA[,2]+b))
+nll <- function(a,b,c,d,e){
+  PA <- exp(a*SA[,2]^2+b*SA[,2]+e)/(1+exp(a*SA[,2]^2+b*SA[,2]+e))
   PDSA <- exp(c*SA[,2]+d)/(1+exp(c*SA[,2]+d))
   PDFA <- exp(c*FA[,2]+d)/(1+exp(c*FA[,2]+d))
   -sum(SA[,1]*log(PA*PDSA) - PA*PDSA) - sum(FA[,1]*log(PDFA) - PDFA)
 }
 
-est <- stats4::mle(minuslog=nll, start=list(a=2,b=0,c=2,d=0))
+est <- stats4::mle(minuslog=nll, start=list(a=2,b=0,c=2,d=0,e=0))
 #x = seq(0.05,0.95,0.1)
-u <- coef(est)[1]*x + coef(est)[2]
+u <- coef(est)[1]*x^2 + coef(est)[2]*x + coef(est)[3]
 PA <- exp(u)/(1+exp(u))
 
 plotTRUE()
@@ -121,9 +121,33 @@ second <- vcov(est)[1:2,1:2]
 interval <- 1.96 * sqrt(rowSums(first %*% second * first))
 plotCI(x,PA,
        li = ifelse(PA - interval>0,PA - interval,0),
-       ui = ifelse(PA + interval<1,PA + interval,1), 
+       ui = ifelse(PA + interval<1,PA + interval,1),
        ylab = "",xlab = "",yaxt="n",xaxt="n", main ="Logit",cex.main = 2,
        xlim = c(0,1), ylim = c(0,1),col = "blue", pch=19)
+
+# ######## logit PA
+# nll <- function(a,b,c,d){
+#   PA <- exp(a*SA[,2]+b)/(1+exp(a*SA[,2]+b))
+#   PDSA <- exp(c*SA[,2]+d)/(1+exp(c*SA[,2]+d))
+#   PDFA <- exp(c*FA[,2]+d)/(1+exp(c*FA[,2]+d))
+#   -sum(SA[,1]*log(PA*PDSA) - PA*PDSA) - sum(FA[,1]*log(PDFA) - PDFA)
+# }
+# 
+# est <- stats4::mle(minuslog=nll, start=list(a=2,b=0,c=2,d=0))
+# #x = seq(0.05,0.95,0.1)
+# u <- coef(est)[1]*x + coef(est)[2]
+# PA <- exp(u)/(1+exp(u))
+# 
+# plotTRUE()
+# par(new = TRUE)
+# first <- cbind(x*PA^2*exp(-u),exp(-u)*PA^2)
+# second <- vcov(est)[1:2,1:2]
+# interval <- 1.96 * sqrt(rowSums(first %*% second * first))
+# plotCI(x,PA,
+#        li = ifelse(PA - interval>0,PA - interval,0),
+#        ui = ifelse(PA + interval<1,PA + interval,1),
+#        ylab = "",xlab = "",yaxt="n",xaxt="n", main ="Logit",cex.main = 2,
+#        xlim = c(0,1), ylim = c(0,1),col = "blue", pch=19)
 
 
 ######## PA SIEVE
