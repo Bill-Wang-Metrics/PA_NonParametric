@@ -8,11 +8,13 @@ library(scales)
 library(dplyr)
 library(EstimationTools)
 library(gaussquad)
+library(statmod)
 set.seed(42)
 
 u <- function(x,q) 5*x+q-2
 logit <- function(x,q) exp(u(x,q))/(1+exp(u(x,q)))
 Pa <- function(x,q) pnorm(u(x,q))
+# Pa <-  function(x,q) 1
 P10 <- function(x,q) Pa(x,q)*logit(x,q)
 P11 <- function(x,q) logit(x,q)
 
@@ -42,7 +44,7 @@ rownames(Dall) <- NULL
 #View(Dall)
 
 
-sum(Dall[-1,])/k/T # 0.5304167 when k = 100, T =24
+sum(Dall[-1,])/k/T 
 
 
 SA <- matrix(nrow = 0, ncol = 3)
@@ -94,19 +96,36 @@ data_GQ <- data_GQ %>%
   ungroup()
 
 
-utility <- function(q,a,b,x) a*x + q + b 
-logit <- function(q,a,b,x){
-  u <- utility(q,a,b,x)
-  exp(u)/(1+exp(u))
+utility <- function(Q,a,b,x){
+  q <- rep(Q, length.out = length(x))
+  a * x + q + b 
+}
+
+Palogit <- function(Q,a,b,c,data_GQid){
+  u <- utility(Q,a,b,data_GQid$X)
+  Pit <- pnorm(u)^(data_GQid$ID0 == 1) * exp(u)/(1+exp(u))
+  # Pit <- exp(u)/(1+exp(u))
+  prod(Pit^(data_GQid$WIC_1 == 1)*(1 - Pit)^(data_GQid$WIC_1 == 0) + 1e-10) * dnorm(Q, mean = 0, sd = c)
 } 
 
-Pd <- (a,b,X){
+
+nll <- function(params = c(1,1,1)){
+  a <- params[1]
+  b <- params[2]
+  c <- params[3]
   
+  neg_ll <- 0
+  for(i in 1:k){
+    data_GQid <- data_GQ[data_GQ$id == i,]
+    neg_ll <- neg_ll - log(integrate(Palogit,
+                                     lower = -Inf,
+                                     upper = Inf,
+                                     a = a,
+                                     b = b,
+                                     c = c,
+                                     data = data_GQid)$value)
+  }
+  return(neg_ll)
 }
 
-
-
-nll <- function(a,b,c,d){
-  
-}
-
+optim(par = c(1,1,1), fn = nll, method = "BFGS")
