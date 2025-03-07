@@ -96,36 +96,59 @@ data_GQ <- data_GQ %>%
   ungroup()
 
 
-utility <- function(Q,a,b,x){
+utility <- function(Q,a,b,c,x){
   q <- rep(Q, length.out = length(x))
-  a * x + q + b 
+  r <- sqrt(2*c^2) * q
+  a * x + r + rep(b, length.out = length(x)) 
 }
 
 Palogit <- function(Q,a,b,c,data_GQid){
-  u <- utility(Q,a,b,data_GQid$X)
+  u <- utility(Q,a,b,c,data_GQid$X)
   Pit <- pnorm(u)^(data_GQid$ID0 == 1) * exp(u)/(1+exp(u))
   # Pit <- exp(u)/(1+exp(u))
-  prod(Pit^(data_GQid$WIC_1 == 1)*(1 - Pit)^(data_GQid$WIC_1 == 0) + 1e-10) * dnorm(Q, mean = 0, sd = c)
+  prod(Pit^(data_GQid$WIC_1 == 1)*(1 - Pit)^(data_GQid$WIC_1 == 0) + 1e-10) 
 } 
 
+quadrature <- gauss.quad(n = 100, kind = "hermite")
+nodes <- quadrature$nodes
+weights <- quadrature$weights
 
-nll <- function(params = c(1,1,1)){
+# Define the integral function
+integrate_Palogit <- function(a, b, c, data_GQid) {
+  # Evaluate the integrand at the quadrature nodes
+  integrand_values <- sapply(nodes, function(Q) {
+    Palogit(Q, a, b, c, data_GQid)
+  })
+  
+  # Approximate the integral using Gaussian quadrature
+  integral <- sum(weights * integrand_values)
+  
+  return(integral)
+}
+
+
+nll <- function(params){
   a <- params[1]
   b <- params[2]
-  c <- params[3]
+  c <- exp(params[3])
   
   neg_ll <- 0
   for(i in 1:k){
     data_GQid <- data_GQ[data_GQ$id == i,]
-    neg_ll <- neg_ll - log(integrate(Palogit,
-                                     lower = -Inf,
-                                     upper = Inf,
-                                     a = a,
-                                     b = b,
-                                     c = c,
-                                     data = data_GQid)$value)
+    
+    # Evaluate the integrand at the quadrature nodes
+    integrand_values <- sapply(nodes, function(Q) {
+      Palogit(Q, a, b, c, data_GQid)
+    })
+    
+    # Approximate the integral using Gaussian quadrature
+    integral <- sum(weights * integrand_values)
+    
+    neg_ll <- neg_ll - log(integral)
   }
   return(neg_ll)
 }
 
-optim(par = c(1,1,1), fn = nll, method = "BFGS")
+#optim(par = c(2,2,2), fn = nll, method = "L-BFGS-B",lower = c(-Inf,-Inf,1e-10))
+#optim(par = c(5,-2,1), fn = nll, method = "BFGS")
+optim(par = c(2,2,2), fn = nll, method = "BFGS")
