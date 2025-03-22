@@ -1,0 +1,98 @@
+---
+title: "Closer_toReal_Random_Effect"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##packages
+
+```{r}
+library(Rlab)
+library(gplm)
+library(stats4)
+library(plotrix)
+library(MASS)
+library(grf)
+library(scales)
+library(dplyr)
+library(EstimationTools)
+library(gaussquad)
+library(statmod)
+set.seed(42)
+```
+
+## Generating the data
+
+```{r}
+au <- function(x1,x3,q)     0 * x1 + 1 * x3 + q - 1
+cu <- function(x1,x3,q,sh)  2 * x1 + 5 * x3 + q - sh + 0 
+lg <- function(u) exp(u)/(1+exp(u))
+
+k = 300
+T = 24
+
+newborn_prob <- 0.02  # 2% chance per month
+sd = 2
+
+id <- rep(1:k, each = T+1)
+month <- rep(0:T,k)
+
+Close_toReal <- c() 
+
+for (i in 1:k){
+  X1 <- rep(0,(T+1))
+  X2 <- rep(0,(T+1))
+  X3 <- rep(0,(T+1))
+  sh <- rep(0,(T+1))
+  D <- rep(0,(T+1))
+
+  X1[1] <- sample(c(0,1,2),size = 1, prob = c(0.8,0.1,0.1))
+  X2[1] <- ifelse(X1[1] != 0,sample(1:20,1),NA)
+  X3[1] <- (X2[1] < 13)
+  sh[1] <- 1
+  D[1] <- 0
+  Q <- rep(rnorm(1,0,sd = sd),(T+1))
+  
+  for (t in 2:(T+1)){
+    if (runif(1) < newborn_prob){ #newborn
+       if (is.na(X2[t-1])){
+         X1[t] = 1
+         X2[t] = 1
+         X3[t] <- (X2[t] < 13)
+         sh[t] <- 1
+         D[t] <- rbern(1,lg(au(1,1,Q[t]))*lg(cu(1,1,Q[t],0)))
+       }else{
+          X1[t] = X1[t-1] + 1
+          X2[t] = X2[t-1] + 1
+          X3[t] <- (X2[t] < 13)
+          sh[t] <- ifelse(D[t-1] == 0,1,ifelse((D[t-1] == 1 &
+                                  D[t-2] == 1 &
+                                  D[t-3] == 1 &
+                                  D[t-4] == 1 &
+                                  D[t-5] == 1 &
+                                  D[t-6] == 1),1,0))
+          D[t] <- rbern(1,lg(au(1,1,Q[t]))*lg(cu(1,1,Q[t],sh[t])))
+        }
+      }else{ #no newborn
+      X1[t] = X1[t-1]
+      X2[t] = X2[t-1] + 1
+      X3[t] <- (X2[t] < 13)
+      past6 <- sum(D[t-1] == 1,D[t-2] == 1,D[t-3] == 1, 
+                   D[t-4] == 1,D[t-5] == 1,D[t-6] == 1)
+      past6 <- ifelse(is.na(past6),0,past6)
+      print(past6)
+      sh[t] <- ifelse(D[t-1] == 0,1,ifelse(past6==6,1,0))
+      D[t] <- rbern(1,lg(au(1,1,Q[t]))*lg(cu(1,1,Q[t],sh[t])))
+    }
+  }
+  
+  Close_toReal <- rbind(Close_toReal,cbind(X1,X2,X3,sh,D))
+}
+
+Close_toReal <- cbind(id,month,Close_toReal)
+Close_toReal <- as.data.frame(Close_toReal)
+Close_toReal <- Close_toReal[Close_toReal$X1 != 0,]
+```
