@@ -80,6 +80,10 @@ all_pretrend_dids <- sapply(all_combinations, calc_pretrend_did)
 # Two-tailed p-value for pre-trend test
 exact_pretrend_p <- mean(abs(all_pretrend_dids) >= abs(actual_pretrend_did))
 
+# Lower-tailed p-value for pre-trend test
+exact_pretrend_p <- mean((all_pretrend_dids) <= (actual_pretrend_did))
+exact_pretrend_p
+
 hist(all_pretrend_dids, breaks=seq(-10,10,0.5), col="lightgreen",
      main="",ylim = c(0,100),xlim = c(-10,10),
      xlab="Possible Pre-Trend Estimates",
@@ -109,7 +113,7 @@ long_data <- wic_data %>%
                names_to = "year",
                values_to = "retention") %>%
   mutate(year = as.numeric(gsub("y", "", year)),
-         post = as.numeric(year >= 2017))  # Treatment occurred after 2016
+         post = as.numeric(year >= 2017))  # Treatment effect kicks in year 2017
 
 library(fixest) # For efficient fixed effects models
 
@@ -288,58 +292,66 @@ fe_model <- feols(retention ~ treated*post | site + year, data = long_data)
 summary(fe_model)
 
 
-# # Create a "time to treatment" variable
-# long_data <- long_data %>%
-#   mutate(post1 =  (year == 2017), pre1 = (year == 2015)) 
-# 
-# # Event-study regression
-# event_study <- feols(retention ~ pre1*treated + post1*treated | site + year, data = long_data) 
-# 
-# summary(event_study)
-# 
-# 
-# # Add implementation year (2016) as reference point (effect = 0)
-# plot_data <- rbind(
-#   data.frame(term = "Implementation (2016)", estimate = 0, 
-#              ci_lower = NA, ci_upper = NA, period = 0),
-#   plot_data
-# )
-# 
-# # Create plot with connected line
-# ggplot(plot_data, aes(x = period, y = estimate)) +
-#   # Reference elements
-#   geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
-#   
-#   # Connecting line (only between points, excluding CI ranges)
-#   geom_line(aes(group = 1), color = "#0072B2", alpha = 0.5, linewidth = 0.8) +
-#   
-#   # Points and error bars (filter out NA for reference point)
-#   geom_point(data = filter(plot_data, !is.na(ci_lower)), 
-#              size = 3, color = "#0072B2") +
-#   geom_errorbar(data = filter(plot_data, !is.na(ci_lower)),
-#                 aes(ymin = ci_lower, ymax = ci_upper), 
-#                 width = 0.2, color = "#0072B2", linewidth = 1) +
-#   
-#   # Reference point (2016)
-#   geom_point(data = filter(plot_data, is.na(ci_lower)), 
-#              size = 3, shape = 21, fill = "white", color = "#0072B2") +
-#   
-#   # Axis and labels
-#   scale_x_continuous(
-#     breaks = c(-1, 0, 1), 
-#     labels = c("Pre (2015)", "Implementation\n(2016)", "Post (2017)"),
-#     limits = c(-1.5, 1.5)
-#   ) +
-#   labs(
-#     title = "Event-Study DiD: WIC Retention Effects",
-#     subtitle = "Connected line shows temporal pattern",
-#     x = "Time Relative to Treatment",
-#     y = "Treatment Effect (Percentage Points)",
-#     caption = "Error bars show 95% confidence intervals\nReference point at 2016 normalized to 0"
-#   ) +
-#   theme_minimal(base_size = 14) +
-#   theme(
-#     panel.grid.minor = element_blank(),
-#     plot.title = element_text(hjust = 0.5),
-#     plot.subtitle = element_text(hjust = 0.5)
-#   )
+# Create a "time to treatment" variable
+long_data <- long_data %>%
+  mutate(post1 =  (year == 2017), pre1 = (year == 2015)) 
+
+# Event-study regression
+event_study <- feols(retention ~ pre1*treated + post1*treated | site + year, data = long_data) 
+
+summary(event_study)
+
+
+coefs <- summary(event_study)$coefficients
+plot_data <- data.frame(
+  term = c("Pre(2015)", "Post(2017)"),
+  estimate = coefs,
+  ci_lower = coefs - 1.96*summary(event_study)$se, 
+  ci_upper = coefs + 1.96*summary(event_study)$se,
+  period = c(-1,1)
+)
+
+# Add implementation year (2016) as reference point (effect = 0)
+plot_data <- rbind(
+  data.frame(term = "Implementation (2016)", estimate = 0, 
+             ci_lower = NA, ci_upper = NA, period = 0),
+  plot_data)
+
+# Create plot with connected line
+ggplot(plot_data, aes(x = period, y = estimate)) +
+  # Reference elements
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  
+  # Connecting line (only between points, excluding CI ranges)
+  geom_line(aes(group = 1), color = "#0072B2", alpha = 0.5, linewidth = 0.8) +
+  
+  # Points and error bars (filter out NA for reference point)
+  geom_point(data = filter(plot_data, !is.na(ci_lower)), 
+             size = 3, color = "#0072B2") +
+  geom_errorbar(data = filter(plot_data, !is.na(ci_lower)),
+                aes(ymin = ci_lower, ymax = ci_upper), 
+                width = 0.2, color = "#0072B2", linewidth = 1) +
+  
+  # Reference point (2016)
+  geom_point(data = filter(plot_data, is.na(ci_lower)), 
+             size = 3, shape = 21, fill = "white", color = "#0072B2") +
+  
+  # Axis and labels
+  scale_x_continuous(
+    breaks = c(-1, 0, 1), 
+    labels = c("Pre (2015)", "Implementation (2016)", "Post (2017)"),
+    limits = c(-1.5, 1.5)
+  ) +
+  labs(
+    # title = "Event-Study DiD: WIC Retention Effects",
+    # subtitle = "Connected line shows temporal pattern",
+    x = "",
+    y = "Treatment Effect (%)",
+    # caption = "Error bars show 95% confidence intervals\nReference point at 2016 normalized to 0"
+  ) +
+  theme_minimal(base_size = 20) +
+  theme(
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5)
+  )
