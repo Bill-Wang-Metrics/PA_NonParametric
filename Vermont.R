@@ -135,8 +135,8 @@ coefs <- summary(event_study)$coefficients
 plot_data <- data.frame(
   term = c("Pre(2015)", "Post(2017)"),
   estimate = coefs,
-  ci_lower = coefs - 1.96*summary(event_study)$se, 
-  ci_upper = coefs + 1.96*summary(event_study)$se,
+  ci_lower = coefs - 1.645*summary(event_study)$se, 
+  ci_upper = coefs + 1.645*summary(event_study)$se,
   period = c(-1,1)
 )
 
@@ -168,7 +168,7 @@ ggplot(plot_data, aes(x = period, y = estimate)) +
   # Axis and labels
   scale_x_continuous(
     breaks = c(-1, 0, 1), 
-    labels = c("Pre (2015)", "Implementation (2016)", "Post (2017)"),
+    labels = c("2015", "2016", "2017"),
     limits = c(-1.5, 1.5)
   ) +
   labs(
@@ -178,7 +178,7 @@ ggplot(plot_data, aes(x = period, y = estimate)) +
     y = "Treatment Effect (%)",
     # caption = "Error bars show 95% confidence intervals\nReference point at 2016 normalized to 0"
   ) +
-  theme_minimal(base_size = 20) +
+  theme_minimal(base_size = 25) +
   theme(
     panel.grid.minor = element_blank(),
     plot.title = element_text(hjust = 0.5),
@@ -306,8 +306,8 @@ coefs <- summary(event_study)$coefficients
 plot_data <- data.frame(
   term = c("Pre(2015)", "Post(2017)"),
   estimate = coefs,
-  ci_lower = coefs - 1.96*summary(event_study)$se, 
-  ci_upper = coefs + 1.96*summary(event_study)$se,
+  ci_lower = coefs - 1.645*summary(event_study)$se, 
+  ci_upper = coefs + 1.645*summary(event_study)$se,
   period = c(-1,1)
 )
 
@@ -339,7 +339,7 @@ ggplot(plot_data, aes(x = period, y = estimate)) +
   # Axis and labels
   scale_x_continuous(
     breaks = c(-1, 0, 1), 
-    labels = c("Pre (2015)", "Implementation (2016)", "Post (2017)"),
+    labels = c("2015", "2016", "2017"),
     limits = c(-1.5, 1.5)
   ) +
   labs(
@@ -349,7 +349,7 @@ ggplot(plot_data, aes(x = period, y = estimate)) +
     y = "Treatment Effect (%)",
     # caption = "Error bars show 95% confidence intervals\nReference point at 2016 normalized to 0"
   ) +
-  theme_minimal(base_size = 20) +
+  theme_minimal(base_size = 25) +
   theme(
     panel.grid.minor = element_blank(),
     plot.title = element_text(hjust = 0.5),
