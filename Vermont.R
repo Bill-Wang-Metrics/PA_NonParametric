@@ -171,6 +171,10 @@ ggplot(plot_data, aes(x = period, y = estimate)) +
     labels = c("2015", "2016", "2017"),
     limits = c(-1.5, 1.5)
   ) +
+  scale_y_continuous(
+    breaks = seq(-15,15,5),
+    limits = c(-15,15)
+  ) +
   labs(
     # title = "Event-Study DiD: WIC Retention Effects",
     # subtitle = "Connected line shows temporal pattern",
@@ -341,6 +345,10 @@ ggplot(plot_data, aes(x = period, y = estimate)) +
     breaks = c(-1, 0, 1), 
     labels = c("2015", "2016", "2017"),
     limits = c(-1.5, 1.5)
+  ) +
+  scale_y_continuous(
+    breaks = seq(-15,15,5),
+    limits = c(-15,15)
   ) +
   labs(
     # title = "Event-Study DiD: WIC Retention Effects",
